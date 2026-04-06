@@ -460,7 +460,19 @@ footer {
   transition: border-color 0.2s;
 }
 
-.field input:focus { border-color: var(--orange); }
+
+.field-error {
+  color: #e53935;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+  padding-left: 2px;
+}
+
+.field input:focus {
+  border-color: var(--orange);
+}
+
 .field input::placeholder { color: #bbb; }
 
 .btn-submit {
@@ -754,24 +766,76 @@ function bgClose(e) {
   if (e.target === document.getElementById('overlay')) closeModal();
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('fName').addEventListener('input', () => clearError('fName'));
+document.getElementById('fPhone').addEventListener('input', () => clearError('fPhone'));
+
+async function showError(fieldId, msg) {
+  const field = document.getElementById(fieldId);
+  field.style.borderColor = '#e53935';
+  let err = field.parentNode.querySelector('.field-error');
+  if (!err) {
+    err = document.createElement('div');
+    err.className = 'field-error';
+    field.parentNode.appendChild(err);
+  }
+  err.textContent = msg;
+}
+
+function clearError(fieldId) {
+  const field = document.getElementById(fieldId);
+  field.style.borderColor = '';
+  const err = field.parentNode.querySelector('.field-error');
+  if (err) err.remove();
+}
+
+function validatePhone(phone) {
+  // Strip spaces, dashes, brackets
+  const clean = phone.replace(/[\s\-\(\)]/g, '');
+  // Allow: +7XXXXXXXXXX, 8XXXXXXXXXX, +country_code + 7-15 digits
+  return /^(\+7|8)\d{10}$/.test(clean) || /^\+[1-9]\d{6,14}$/.test(clean);
+}
+
+function validateName(name) {
+  // At least 2 chars, letters only (Russian + Latin + space + hyphen)
+  return name.length >= 2 && /^[a-zA-Zа-яА-ЯёЁ\s\-]+$/.test(name);
+}
 
 async function submit() {
   const name = document.getElementById('fName').value.trim();
   const phone = document.getElementById('fPhone').value.trim();
-  if (!name) { document.getElementById('fName').focus(); return; }
-  if (!phone) { document.getElementById('fPhone').focus(); return; }
+
+  clearError('fName');
+  clearError('fPhone');
+
+  let hasError = false;
+
+  if (!name) {
+    showError('fName', 'Введите ваше имя');
+    hasError = true;
+  } else if (!validateName(name)) {
+    showError('fName', 'Имя должно содержать только буквы');
+    hasError = true;
+  }
+
+  if (!phone) {
+    showError('fPhone', 'Введите номер телефона');
+    hasError = true;
+  } else if (!validatePhone(phone)) {
+    showError('fPhone', 'Введите корректный номер: +7XXXXXXXXXX или 8XXXXXXXXXX');
+    hasError = true;
+  }
+
+  if (hasError) return;
 
   const TOKEN = '8369009600:AAElViSjaROgTbI6vUEYF85ovZPrLLdpqGI';
   const CHAT_ID = '-5055224187';
-  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwNmMOEpALhb0wwiedTFTMk_cBsHKY_etkNQELJuqGT9BlhBhtGvyRSOOxXTf6Qnq4O/exec';
+  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzaTZvRJ4hejpgyMrrU0dmJgG0yS0S-qggH_e7cXkokzGWug-wE1cXiuznkA7nA8SmY/exec';
 
+  // Отправляем через GET параметры (обходит CORS)
   let num = '—';
   try {
-    const res = await fetch(SHEETS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone })
-    });
+    const url = `${SHEETS_URL}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`;
+    const res = await fetch(url);
     const json = await res.json();
     if (json.ok) num = json.num;
   } catch(e) { console.error('Sheets error:', e); }
