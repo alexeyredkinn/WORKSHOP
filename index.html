@@ -342,6 +342,12 @@ body{background:var(--bg);color:var(--dark);font-family:'Satoshi',sans-serif;fon
 .btn-submit{width:100%;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:16px;font-family:'Satoshi',sans-serif;font-weight:800;font-size:15px;cursor:pointer;margin-top:6px;transition:background .2s,transform .15s;letter-spacing:.02em;}
 .btn-submit:hover{background:#e64a19;transform:translateY(-1px);}
 .modal-legal{font-size:11px;color:#bbb;text-align:center;margin-top:12px;line-height:1.5;}
+.consent-row{display:flex;align-items:flex-start;gap:10px;margin-top:14px;}
+.consent-cb{width:18px;height:18px;min-width:18px;accent-color:var(--orange);cursor:pointer;margin-top:2px;flex-shrink:0;}
+.consent-label{font-size:11px;color:#888;line-height:1.6;cursor:pointer;}
+.consent-label a{color:var(--orange);text-decoration:underline;white-space:nowrap;}
+.consent-label a:hover{color:#e64a19;}
+.consent-error{font-size:11px;color:#e53935;margin-top:4px;display:none;}
 .modal-success{display:none;text-align:center;padding:8px 0;}
 .success-icon{font-size:52px;margin-bottom:16px;}
 .success-title{font-family:'Clash Display',sans-serif;font-size:32px;font-weight:700;color:var(--green);margin-bottom:8px;}
@@ -707,7 +713,13 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
         <input type="tel" id="fPhone" placeholder="+7 (999) 000-00-00" autocomplete="tel">
       </div>
       <button class="btn-submit" onclick="submitForm()">Зарегистрироваться →</button>
-      <div class="modal-legal">Нажимая кнопку, вы соглашаетесь на обработку персональных данных</div>
+      <div class="consent-row">
+        <input type="checkbox" id="fConsent" class="consent-cb">
+        <div>
+          <label class="consent-label" for="fConsent">Я даю <a href="https://docs.google.com/document/d/1kVFPy4JYnJDIJ8A0AjOMY-4d82wEaUkt/edit?usp=sharing&ouid=109497559385466436565&rtpof=true&sd=true" target="_blank">согласие на обработку персональных данных</a> и принимаю <a href="https://docs.google.com/document/d/14QJXF8YyU2S6MCTv2D7QNjXwdcTAFjJ-/edit?usp=sharing&ouid=109497559385466436565&rtpof=true&sd=true" target="_blank">политику конфиденциальности</a></label>
+          <div class="consent-error" id="consentError">Пожалуйста, дайте согласие для продолжения</div>
+        </div>
+      </div>
     </div>
     <div class="modal-success" id="mSuccess">
       <div class="success-icon">🎉</div>
@@ -750,15 +762,19 @@ function validatePhone(p) {
 }
 document.getElementById('fName').addEventListener('input',()=>clearError('fName'));
 document.getElementById('fPhone').addEventListener('input',()=>clearError('fPhone'));
+document.getElementById('fConsent').addEventListener('change',()=>{ document.getElementById('consentError').style.display='none'; });
 
 async function submitForm() {
   const name=document.getElementById('fName').value.trim();
   const phone=document.getElementById('fPhone').value.trim();
+  const consent=document.getElementById('fConsent');
   clearError('fName'); clearError('fPhone');
+  document.getElementById('consentError').style.display='none';
   let err=false;
   if(!name||name.length<2) { showError('fName','Введите ваше имя'); err=true; }
   if(!phone) { showError('fPhone','Введите номер телефона'); err=true; }
   else if(!validatePhone(phone)) { showError('fPhone','Введите корректный номер: +7XXXXXXXXXX или 8XXXXXXXXXX'); err=true; }
+  if(!consent.checked) { document.getElementById('consentError').style.display='block'; err=true; }
   if(err) return;
 
   const SHEETS='https://script.google.com/macros/s/AKfycbzaTZvRJ4hejpgyMrrU0dmJgG0yS0S-qggH_e7cXkokzGWug-wE1cXiuznkA7nA8SmY/exec';
